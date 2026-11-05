@@ -1,0 +1,104 @@
+{
+  "title": "Palmer penguins (n=45): bill length, flipper length, body mass",
+  "width": 500,
+  "height": 500,
+  "depth": 500,
+  "data": {
+    "url": "scatter_penguins.csv"
+  },
+  "mark": "sphere",
+  "encoding": {
+    "x": {
+      "field": "BillLength",
+      "type": "quantitative",
+      "scale": {
+        "domain": [
+          35,
+          55
+        ]
+      },
+      "axis": {
+        "title": "Bill length (mm)",
+        "values": [
+          35,
+          40,
+          45,
+          50,
+          55
+        ],
+        "grid": true
+      }
+    },
+    "y": {
+      "field": "FlipperLength",
+      "type": "quantitative",
+      "scale": {
+        "domain": [
+          180,
+          230
+        ]
+      },
+      "axis": {
+        "title": "Flipper length (mm)",
+        "values": [
+          180,
+          190,
+          200,
+          210,
+          220,
+          230
+        ],
+        "grid": true
+      }
+    },
+    "z": {
+      "field": "BodyMass",
+      "type": "quantitative",
+      "scale": {
+        "domain": [
+          3000,
+          7000
+        ]
+      },
+      "axis": {
+        "title": "Body mass (g)",
+        "values": [
+          3000,
+          4000,
+          5000,
+          6000,
+          7000
+        ],
+        "grid": true,
+        "face": "right",
+        "orient": "bottom"
+      }
+    },
+    "color": {
+      "field": "Species",
+      "type": "nominal",
+      "scale": {
+        "domain": [
+          "Adelie",
+          "Chinstrap",
+          "Gentoo"
+        ],
+        "range": "category",
+        "scheme": [
+          "#ff9f1c",
+          "#ff4fa3",
+          "#7ee36b"
+        ]
+      },
+      "legend": {
+        "title": "Species"
+      }
+    },
+    "size": {
+      "value": "24"
+    }
+  },
+  "view": {
+    "yaw": 30
+  }
+}

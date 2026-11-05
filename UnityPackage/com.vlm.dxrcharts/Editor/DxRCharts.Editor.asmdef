@@ -1,0 +1,10 @@
+{
+  "name": "DxRCharts.Editor",
+  "rootNamespace": "",
+  "references": [ "DxRCharts.Runtime" ],
+  "includePlatforms": [ "Editor" ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true,
+  "noEngineReferences": false
+}

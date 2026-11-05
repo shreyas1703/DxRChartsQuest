@@ -1,0 +1,9 @@
+{
+  "name": "com.vlm.dxrcharts",
+  "version": "1.0.0",
+  "displayName": "DxR Charts for Quest (VLM recording)",
+  "description": "DxR (github.com/ronellsicat/DxR) ported to Unity OpenXR for Meta Quest 2: graph-only 3D pie, bar and scatter charts built from JSON specs, for recording videos used in VLM table-extraction experiments.",
+  "unity": "2022.3",
+  "keywords": ["dxr", "xr", "openxr", "quest", "visualization", "vlm"],
+  "author": { "name": "DxRCharts" }
+}

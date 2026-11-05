@@ -1,0 +1,46 @@
+{
+  "labels_mode": "names",
+  "charts": [
+    {
+      "id": "pie",
+      "spec": "pie_vgsales_genre.json",
+      "ground_truth": "pie_vgsales_genre.csv",
+      "source": "kaggle.com/datasets/gregorut/videogamesales (vgsales.csv)",
+      "raw_sha256": "e2076095ffcae2a92dbc6de6ecbd54455ee034bb38da550b2dc385e9265d4ebe",
+      "transform": "sum Global_Sales by Genre over all 16598 games; top 7 genres + 'Other'; share = genre / total",
+      "total_sales_millions": 8920.44
+    },
+    {
+      "id": "bar",
+      "spec": "bar_diamonds_clarity.json",
+      "ground_truth": "bar_diamonds_clarity.csv",
+      "source": "kaggle.com/datasets/shivam2503/diamonds (diamonds.csv)",
+      "raw_sha256": "9574730b03aba241d899c4a97511c5061b19358fab89510774fb6c24168345c4",
+      "transform": "mean price per clarity grade over all 53940 diamonds, rounded to 0.1 USD; bars in GIA order I1 (worst) to IF (best)"
+    },
+    {
+      "id": "scatter",
+      "spec": "scatter_penguins.json",
+      "ground_truth": "scatter_penguins.csv",
+      "source": "kaggle.com/datasets/parulpandey/palmer-archipelago-antarctica-penguin-data (Palmer penguins)",
+      "raw_sha256": "f204db2c753b0937caac3cb35258562c14f073e4bbc76be24b4c51ce22767a93",
+      "transform": "drop rows with missing values; random.Random(7).sample 15 per species; sorted by species, bill length"
+    },
+    {
+      "id": "line",
+      "spec": "line_gapminder_lifeexp.json",
+      "ground_truth": "line_gapminder_lifeexp.csv",
+      "source": "kaggle.com/datasets/tklimonova/gapminder-datacamp-2007 (Gapminder World 1952-2007)",
+      "raw_sha256": "714f8a23e9d7429052a1e9b45d20b9adeb64f46c067ed46320e68182e4607b6d",
+      "transform": "life expectancy (lifeExp) of Japan, China, South Africa, India in every survey year 1952-2007 (12 points per country)"
+    },
+    {
+      "id": "heatmap",
+      "spec": "heatmap_air_passengers.json",
+      "ground_truth": "heatmap_air_passengers.csv",
+      "source": "kaggle.com/datasets/rakannimer/air-passengers (AirPassengers.csv; Box & Jenkins airline data)",
+      "raw_sha256": "237d834127d9c6355630d8f443a7a2377b5925923010009b59809ba0b67f4fac",
+      "transform": "monthly totals (thousands of passengers) for 1955-1960; colour = sequential YlOrRd scale with stops [200, 300, 400, 500, 600, 700]"
+    }
+  ]
+}

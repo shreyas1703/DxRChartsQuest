@@ -1,0 +1,80 @@
+{
+  "title": "Video game sales by genre (global, millions of units)",
+  "width": 600,
+  "height": 600,
+  "depth": 60,
+  "data": {
+    "url": "pie_vgsales_genre.csv"
+  },
+  "mark": "arc",
+  "encoding": {
+    "x": {
+      "value": "300"
+    },
+    "y": {
+      "value": "300"
+    },
+    "z": {
+      "value": "0"
+    },
+    "startangle": {
+      "field": "start_angle",
+      "type": "quantitative",
+      "scale": {
+        "type": "none"
+      }
+    },
+    "endangle": {
+      "field": "end_angle",
+      "type": "quantitative",
+      "scale": {
+        "type": "none"
+      }
+    },
+    "radius": {
+      "value": "250"
+    },
+    "thickness": {
+      "value": "60"
+    },
+    "color": {
+      "field": "Genre",
+      "type": "nominal",
+      "scale": {
+        "domain": [
+          "Action",
+          "Sports",
+          "Shooter",
+          "Role-Playing",
+          "Platform",
+          "Misc",
+          "Racing",
+          "Other"
+        ],
+        "range": "category",
+        "scheme": [
+          "#f58518",
+          "#e45756",
+          "#72b7b2",
+          "#54a24b",
+          "#eeca3b",
+          "#b279a2",
+          "#ff9da6",
+          "#d9d9d9"
+        ]
+      },
+      "legend": {
+        "title": "Genre",
+        "x": 740,
+        "y": 600
+      }
+    },
+    "label": {
+      "field": "label",
+      "type": "nominal",
+      "scale": {
+        "type": "none"
+      }
+    }
+  }
+}

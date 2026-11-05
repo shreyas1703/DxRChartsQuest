@@ -1,0 +1,82 @@
+{
+  "title": "Diamonds: mean price by clarity grade (n = 53,940)",
+  "width": 900,
+  "height": 500,
+  "depth": 120,
+  "data": {
+    "url": "bar_diamonds_clarity.csv"
+  },
+  "mark": "cube",
+  "encoding": {
+    "x": {
+      "field": "Clarity",
+      "type": "nominal",
+      "scale": {
+        "domain": [
+          "I1",
+          "SI2",
+          "SI1",
+          "VS2",
+          "VS1",
+          "VVS2",
+          "VVS1",
+          "IF"
+        ]
+      },
+      "axis": {
+        "title": "Clarity grade (worst to best)"
+      }
+    },
+    "z": {
+      "value": "60"
+    },
+    "y": {
+      "field": "MeanPrice",
+      "type": "quantitative",
+      "scale": {
+        "domain": [
+          0,
+          6000
+        ]
+      },
+      "axis": {
+        "title": "Mean price (USD)",
+        "values": [
+          0,
+          1000,
+          2000,
+          3000,
+          4000,
+          5000,
+          6000
+        ],
+        "grid": true
+      }
+    },
+    "height": {
+      "field": "MeanPrice",
+      "type": "quantitative",
+      "scale": {
+        "domain": [
+          0,
+          6000
+        ]
+      }
+    },
+    "yoffsetpct": {
+      "value": "-0.5"
+    },
+    "width": {
+      "value": "70"
+    },
+    "depth": {
+      "value": "80"
+    },
+    "color": {
+      "value": "#f58518"
+    }
+  },
+  "view": {
+    "yaw": 20
+  }
+}

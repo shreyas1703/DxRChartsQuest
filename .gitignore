@@ -1,0 +1,22 @@
+# media, generated data, trained models (too big for GitHub)
+*.mp4
+*.mov
+*.zip
+frames_all/
+real_clips/*/
+finetune*/data*/
+lora_*/
+outputs*/
+unsloth_compiled_cache/
+__pycache__/
+.DS_Store
+# Unity
+Library/
+Temp/
+Obj/
+Build/
+Builds/
+Logs/
+UserSettings/
+*.csproj
+*.sln

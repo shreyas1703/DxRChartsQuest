@@ -1,0 +1,9 @@
+Genre,Sales,Percent,start_angle,end_angle,label
+Action,1751.18,19.63,0.000,70.672,Action
+Sports,1330.93,14.92,70.672,124.384,Sports
+Shooter,1037.37,11.63,124.384,166.249,Shooter
+Role-Playing,927.37,10.40,166.249,203.674,Role-Playing
+Platform,831.37,9.32,203.674,237.226,Platform
+Misc,809.96,9.08,237.226,269.913,Misc
+Racing,732.04,8.21,269.913,299.456,Racing
+Other,1500.22,16.82,299.456,360.000,Other

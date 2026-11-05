@@ -1,0 +1,24 @@
+{
+  "charts": [
+    {
+      "id": "pie",
+      "spec": "pie_vgsales_genre.json"
+    },
+    {
+      "id": "bar",
+      "spec": "bar_diamonds_clarity.json"
+    },
+    {
+      "id": "scatter",
+      "spec": "scatter_penguins.json"
+    },
+    {
+      "id": "line",
+      "spec": "line_gapminder_lifeexp.json"
+    },
+    {
+      "id": "heatmap",
+      "spec": "heatmap_air_passengers.json"
+    }
+  ]
+}

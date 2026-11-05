@@ -1,0 +1,95 @@
+{
+  "title": "Airline passengers per month, 1955-1960 (thousands)",
+  "width": 720,
+  "height": 720,
+  "depth": 30,
+  "data": {
+    "url": "heatmap_air_passengers.csv"
+  },
+  "mark": "rect",
+  "encoding": {
+    "x": {
+      "field": "Year",
+      "type": "nominal",
+      "scale": {
+        "domain": [
+          "1955",
+          "1956",
+          "1957",
+          "1958",
+          "1959",
+          "1960"
+        ],
+        "padding": 0
+      },
+      "axis": {
+        "title": "Year"
+      }
+    },
+    "y": {
+      "field": "Month",
+      "type": "nominal",
+      "scale": {
+        "domain": [
+          "Dec",
+          "Nov",
+          "Oct",
+          "Sep",
+          "Aug",
+          "Jul",
+          "Jun",
+          "May",
+          "Apr",
+          "Mar",
+          "Feb",
+          "Jan"
+        ],
+        "padding": 0
+      },
+      "axis": {
+        "title": "Month"
+      }
+    },
+    "z": {
+      "value": "15"
+    },
+    "width": {
+      "value": "112.8"
+    },
+    "height": {
+      "value": "54.0"
+    },
+    "depth": {
+      "value": "20"
+    },
+    "color": {
+      "field": "Passengers",
+      "type": "quantitative",
+      "scale": {
+        "type": "sequential",
+        "domain": [
+          200,
+          300,
+          400,
+          500,
+          600,
+          700
+        ],
+        "range": [
+          "#ffffb2",
+          "#fed976",
+          "#feb24c",
+          "#fd8d3c",
+          "#f03b20",
+          "#bd0026"
+        ]
+      },
+      "legend": {
+        "title": "Passengers (thousands)",
+        "type": "gradient",
+        "x": 750,
+        "y": 700
+      }
+    }
+  }
+}
