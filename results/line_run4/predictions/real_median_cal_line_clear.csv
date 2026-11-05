@@ -1,0 +1,49 @@
+Country,Year,Life_expectancy
+Japan,1952,64
+Japan,1957,66.9
+Japan,1962,70.1
+Japan,1967,72.7
+Japan,1972,74.7
+Japan,1977,76.6
+Japan,1982,78.6
+Japan,1987,79.9
+Japan,1992,80.6
+Japan,1997,82.1
+Japan,2002,83.6
+Japan,2007,84.4
+China,1952,45.4
+China,1957,52.1
+China,1962,46.3
+China,1967,59.7
+China,1972,63.8
+China,1977,64.5
+China,1982,66
+China,1987,68
+China,1992,69.6
+China,1997,71.4
+China,2002,73
+China,2007,74
+South Africa,1952,46.3
+South Africa,1957,49.7
+South Africa,1962,51.5
+South Africa,1967,53.3
+South Africa,1972,55.2
+South Africa,1977,56.8
+South Africa,1982,59.6
+South Africa,1987,62.1
+South Africa,1992,63.3
+South Africa,1997,61.8
+South Africa,2002,55
+South Africa,2007,51.5
+India,1952,39
+India,1957,41.7
+India,1962,44.8
+India,1967,48.4
+India,1972,51.8
+India,1977,55.6
+India,1982,58.8
+India,1987,60.5
+India,1992,61.8
+India,1997,62.8
+India,2002,64
+India,2007,65.5

@@ -1,0 +1,10 @@
+{
+ "chart": "line",
+ "offset": {
+  "Life_expectancy": 0.0
+ },
+ "offset_video": {
+  "Life_expectancy": 0.0
+ },
+ "synthetic_clips": 10
+}

@@ -1,0 +1,12 @@
+{
+  "base": "unsloth/Qwen3.5-9B",
+  "clips": 1000,
+  "frames_per_clip": 8,
+  "steps": 125,
+  "rank": 16,
+  "lr": 0.0002,
+  "max_side": 640,
+  "load_4bit": false,
+  "train_runtime_s": 1501.7136,
+  "train_loss": 0.18712176895141602
+}
