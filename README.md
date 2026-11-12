@@ -37,16 +37,31 @@ only, and the true tables are read only by the scorer after the model has answer
 | 6 | How answers are scored, and what the model is (and is not) trained on | [docs/6_scoring_and_metrics.md](docs/6_scoring_and_metrics.md) |
 | 7 | Compute (Colab, Kaggle), notebooks, problems we hit and their fixes | [docs/7_compute_and_reproduce.md](docs/7_compute_and_reproduce.md) |
 
+## Latest: any line chart (runs 5–6)
+
+Can the model read a DxR line chart it has never seen, with new axes and random values? Tested on pre-registered test charts that are never used in training.
+
+| Test chart F (Day × Price, 36 values) | Training charts (all synthetic) | Within 5 % |
+|---|---|---|
+| Run 4 | life-expectancy charts only | 80.6 % |
+| Run 5 | any axes, flat charts | 86.1 % |
+| **Run 6** | any axes, DxR-like 3D charts | **94.4 %** (mean error 2.0 %, 0 missing) |
+
+Run 6 trains on charts drawn like DxR in the headset (lines floating in front of a back-wall grid, changing viewing angles), which removes most of run 5's upward depth bias.
+Full results, all test charts and the second recording: [`results/line_control/README.md`](results/line_control/README.md).
+Notebooks: `notebooks/Run6_anyline_DxR3D.ipynb` (run 6), `notebooks/Control_any_line_test.ipynb` (run 5 and the test).
+
 ## Repository map
 
 | Folder | Contents |
 |---|---|
-| `ground_truth/` | the true tables of the 5 charts (CSV), used only for scoring |
+| `ground_truth/` | the true tables of the 5 charts (CSV), used only for scoring; `control/` holds the pre-registered test charts |
 | `vlm_eval/` | frame extraction, prompts (`prompts.md`), scoring (`score_tables.py`), prompt helpers (`run_local_vlm.py`), baseline study scripts |
 | `finetune/` | runs 1–2: synthetic image dataset, LoRA training and evaluation for Qwen3-VL-8B |
-| `finetune_video/` | runs 3–4: synthetic video dataset, LoRA training, evaluation, median voting |
+| `finetune_video/` | runs 3–6: synthetic video datasets (flat and DxR-like 3D line charts), LoRA training, evaluation, median voting |
+| `control_test/` | pre-registered test charts: generator, DxR spec maker (`make_dxr_specs.py`), proof videos |
 | `notebooks/` | end-to-end notebooks for Colab (A100 / T4) and Kaggle (free T4) |
-| `results/` | result tables, training info and the model's raw answers for runs 3 and 4 |
+| `results/` | result tables, training info and raw answers for runs 3–4; runs 4–6 on the test charts in `results/line_control/` |
 | `docs/` | step-by-step documentation |
 
 Not stored in git (too large, see `.gitignore`): Quest videos, extracted frames, generated training data and trained
