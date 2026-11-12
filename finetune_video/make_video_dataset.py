@@ -65,6 +65,14 @@ def real_names():
                     for k in ("Genre", "Clarity", "Country", "Species"):
                         if row.get(k):
                             names.add(row[k].strip())
+        ctrl = os.path.join(gt, "control")                     # control (test-only) charts: their names never train
+        if os.path.isdir(ctrl):
+            for f in os.listdir(ctrl):
+                if f.endswith(".csv"):
+                    for row in csv.DictReader(open(os.path.join(ctrl, f), encoding="utf-8")):
+                        for k in ("Country", "Series"):
+                            if row.get(k):
+                                names.add(row[k].strip())
     return names
 
 
@@ -122,6 +130,56 @@ def data_line(rng):
             v = min(88, max(25, v + slope * step + rng.gauss(0, 1.2) + (rng.uniform(-8, 0) if rng.random() < 0.06 else 0)))
             rows.append((c, start + step * i, round(v, 1)))
     return "Country,Year,Life_expectancy", rows
+
+
+# ---- any line chart (run 5): random x axis, random y measure and scale, random series names; header Series,X,Y
+CITIES = ("Oslo Lima Cairo Quito Accra Hanoi Dakar Perth Porto Delhi Tunis Riga Sofia Lyon Graz Kobe Bonn Cork Leeds Turin "
+          "Austin Denver Boston Dallas Tampa Omaha Fresno Reno").split()
+PRODUCTS = [f"{a} {b}" for a in ("Model", "Product", "Brand", "Series", "Plan", "Type") for b in "ABCDEFGHJK"]
+TEAMS = ("Falcons Tigers Wolves Hawks Lions Bears Sharks Eagles Comets Rockets Pumas Vipers").split()
+SENSORS = [f"Sensor {i}" for i in range(1, 13)] + [f"Station {c}" for c in "ABCDEFGH"] + [f"Group {c}" for c in "ABCDEFGH"]
+YMEASURES = [("Sales (units)", 100), ("Revenue (million $)", 10), ("Temperature (°C)", 10), ("Rainfall (mm)", 100),
+             ("Price ($)", 10), ("Score", 10), ("Population (thousands)", 1000), ("Speed (km/h)", 100),
+             ("Conversion rate (%)", 10), ("Energy use (kWh)", 1000), ("Visitors", 10000), ("Weight (kg)", 10),
+             ("Height (cm)", 100), ("Index", 100), ("Share (%)", 10), ("Cost (thousand $)", 100), ("Growth rate", 1)]
+LEGEND_OF = {"city": "City", "product": "Product", "team": "Team", "sensor": "Group", "country": "Country"}
+
+
+def data_linexy(rng):
+    xk = rng.choice(["year", "year", "month", "week", "day", "age", "hour", "round"])
+    if xk == "year":
+        step = rng.choice([1, 2, 5, 5, 10]); m = rng.randint(5, 13); start = rng.randint(1900, 2024 - step * (m - 1)); xt = "Year"
+    elif xk == "month":
+        start, step, m, xt = 1, 1, rng.choice([6, 12, 12]), "Month"
+    elif xk == "week":
+        start, step, m, xt = 1, rng.choice([1, 1, 2]), rng.randint(8, 16), "Week"
+    elif xk == "day":
+        start, step, m, xt = 1, rng.choice([1, 2, 3, 5]), rng.randint(7, 12), "Day"
+    elif xk == "age":
+        start, step, m, xt = rng.choice([0, 10, 20]), rng.choice([5, 10]), rng.randint(6, 9), "Age (years)"
+    elif xk == "hour":
+        start, step, m, xt = 0, rng.choice([2, 3]), rng.randint(8, 12), "Hour"
+    else:
+        start, step, m, xt = 1, 1, rng.randint(6, 12), rng.choice(["Round", "Trial", "Level", "Session", "Step"])
+    xs = [start + step * i for i in range(m)]
+    yt, mag = rng.choice(YMEASURES)
+    mag *= rng.choice([0.5, 1, 1, 2, 5])
+    lo = rng.uniform(0.3, 3) * mag
+    span = rng.uniform(0.6, 3) * mag
+    dec = 0 if mag >= 100 else (1 if mag >= 5 else 2)
+    fam = rng.choice(list(LEGEND_OF))
+    src = {"city": CITIES, "product": PRODUCTS, "team": TEAMS, "sensor": SENSORS, "country": COUNTRIES}[fam]
+    names = rng.sample(pool(src), rng.randint(2, 6))
+    rows = []
+    for c in names:
+        v = lo + rng.uniform(0, 0.7) * span
+        slope = rng.uniform(-0.12, 0.25) * span / m
+        for i, x in enumerate(xs):
+            if i:
+                v += slope + rng.gauss(0, 0.04 * span) + (-rng.uniform(0.1, 0.25) * span if rng.random() < 0.06 else 0)
+            v = min(lo + span * 1.2, max(lo * 0.5, v))
+            rows.append((c, x, round(v, dec) if dec else int(round(v))))
+    return "Series,X,Y", rows, {"x": xt, "y": yt, "legend": LEGEND_OF[fam], "dec": dec}
 
 
 def data_heatmap(rng):
@@ -204,6 +262,32 @@ def render_line(rng, rows):
     ax.set_ylabel("Life expectancy (years)", color="#f3e3a6", bbox=label_box(), fontsize=9)
     legend(fig, rng, "Country", names, cols, x=0.78, y=0.85, marker="o")
     fig.text(0.44, 0.93, rng.choice(["Life expectancy over time", "Life expectancy by country"]), ha="center",
+             color="white", fontsize=11, bbox=label_box(TITLE_BG))
+    return fig_to_img(fig)
+
+
+def render_linexy(rng, rows, spec):
+    from matplotlib.ticker import AutoMinorLocator, MaxNLocator
+    fig = plt.figure(figsize=(8, 6), facecolor=BG)
+    ax = fig.add_axes([0.15, 0.14, 0.60, 0.72], facecolor=BG)
+    names = list(dict.fromkeys(r[0] for r in rows))
+    cols = rng.sample(PALETTE[:7], len(names))
+    for n, c in zip(names, cols):
+        pts = [(r[1], r[2]) for r in rows if r[0] == n]
+        ax.plot([p[0] for p in pts], [p[1] for p in pts], color=c, lw=2.2, marker="o", ms=rng.choice([3, 4, 5]))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=rng.choice([5, 6, 8, 10])))
+    xs = sorted({r[1] for r in rows})
+    if len(xs) <= 13:
+        ax.set_xticks(xs)
+    ax.grid(True, color="#c9ccd1", lw=0.8)
+    if rng.random() < 0.5:
+        ax.yaxis.set_minor_locator(AutoMinorLocator(rng.choice([2, 4, 5])))
+        ax.grid(True, which="minor", axis="y", color="#c9ccd1", lw=0.4, alpha=0.6)
+    style_ticks(ax, rng.choice([8, 9]))
+    ax.set_xlabel(spec["x"], color="white", bbox=label_box(), fontsize=9)
+    ax.set_ylabel(spec["y"], color="#f3e3a6", bbox=label_box(), fontsize=9)
+    legend(fig, rng, spec["legend"], names, cols, x=0.80, y=0.85, marker="o")
+    fig.text(0.45, 0.93, f"{spec['y'].split(' (')[0]} by {spec['x'].split(' (')[0].lower()}", ha="center",
              color="white", fontsize=11, bbox=label_box(TITLE_BG))
     return fig_to_img(fig)
 
@@ -358,12 +442,14 @@ def to_csv(header, rows, kind):
     return header + "\n" + "\n".join(",".join(f"{v:.1f}" if (kind, i) in one else str(v) for i, v in enumerate(r)) for r in rows) + "\n"
 
 
-DATA = {"pie": data_pie, "bar": data_bar, "line": data_line, "heatmap": data_heatmap, "scatter": data_scatter}
-MIX = {"pie": 0.16, "bar": 0.30, "line": 0.14, "heatmap": 0.28, "scatter": 0.12}
+DATA = {"pie": data_pie, "bar": data_bar, "line": data_line, "heatmap": data_heatmap, "scatter": data_scatter,
+        "linexy": data_linexy}
+MIX = {"pie": 0.16, "bar": 0.30, "line": 0.14, "heatmap": 0.28, "scatter": 0.12, "linexy": 0.14}
 
 
 def make_clip(kind, rng, n, size):
-    header, rows = DATA[kind](rng)
+    res = DATA[kind](rng)
+    header, rows, spec = res[0], res[1], (res[2] if len(res) > 2 else None)
     p = look_params(rng)
     sweep = rng.uniform(40, 80) * rng.choice([-1, 1])            # degrees the viewer walks around the chart
     ts = [i / max(1, n - 1) for i in range(n)]
@@ -375,7 +461,7 @@ def make_clip(kind, rng, n, size):
             frames.append(headset_look(fig_to_img(fig, close=False), p, rng, size))
         plt.close(fig)
     else:
-        img = {"pie": render_pie, "line": render_line, "heatmap": render_heatmap}[kind](rng, rows)
+        img = render_linexy(rng, rows, spec) if kind == "linexy" else {"pie": render_pie, "line": render_line, "heatmap": render_heatmap}[kind](rng, rows)
         pitch = rng.uniform(-15, 15)
         yaw0 = rng.uniform(-15, 15)
         for t in ts:

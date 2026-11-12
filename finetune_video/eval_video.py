@@ -36,7 +36,7 @@ def _load(name):
 vlm, st = _load("run_local_vlm"), _load("score_tables")
 _fb = importlib.util.module_from_spec(importlib.util.spec_from_file_location("vscore", os.path.join(HERE, "vscore.py")))
 _fb.__spec__.loader.exec_module(_fb)
-for _n in ("GT", "FILES", "read", "num", "norm", "score_labeled", "score_scatter", "score_line"):
+for _n in ("GT", "FILES", "read", "num", "norm", "score_labeled", "score_scatter", "score_line", "score_linexy"):
     if not hasattr(st, _n):
         setattr(st, _n, getattr(_fb, _n))          # fill in anything missing from vlm_eval/score_tables.py
 COLS = ["time", "set", "model", "input", "chart", "clip", "frames", "seconds", "measure", "structure", "value_acc", "value_mre", "flags", "prediction"]
@@ -89,6 +89,10 @@ def score(chart, pred_path, truth_csv=None):
         s_str, s_acc, s_mre = scatter_summary(gt, pred)
         return [{"measure": "points", "structure": r["point_recall"], "value_acc": r["all_axes_within_5pct"], "value_mre": "", "flags": fl},
                 {"measure": "summary", "structure": s_str, "value_acc": s_acc, "value_mre": s_mre, "flags": fl}]
+    if chart == "linexy":
+        r = st.score_linexy(gt, pred)
+        return [{"measure": "Y", "structure": round(r["series_found"] / r["series_true"], 3),
+                 "value_acc": r["curve_within_5pct"], "value_mre": r["curve_mean_rel_error"] if r["curve_mean_rel_error"] is not None else "", "flags": fl}]
     if chart == "line":
         r = st.score_line(gt, pred)
         return [{"measure": "Life_expectancy", "structure": round(r["series_found"] / r["series_true"], 3),
@@ -98,6 +102,12 @@ def score(chart, pred_path, truth_csv=None):
             "value_mre": m["mean_rel_error"] if m["mean_rel_error"] is not None else "", "flags": fl}
            for c, m in r["columns"].items() if not (chart == "pie" and c != "Share_percent")]
     return out or [{"measure": "all", "structure": r["row_recall"], "value_acc": 0, "value_mre": "", "flags": fl}]
+
+
+def control_truth(video):
+    """Truth table of a control recording (ground_truth/control/<video>.csv), or None for the original charts."""
+    p = os.path.join(ROOT, "ground_truth", "control", f"{video}.csv")
+    return open(p, encoding="utf-8").read() if os.path.exists(p) else None
 
 
 # ------------------------------------------------------------------ model
@@ -156,7 +166,7 @@ def evaluate(a):
         for r in (json.loads(l) for l in open(a.real, encoding="utf-8")):
             if a.charts and r["chart"] not in a.charts or a.videos and r["video"] not in a.videos:
                 continue
-            one("real", "video", r["chart"], r["video"], [os.path.join(base, f) for f in r["frames"]])
+            one("real", "video", r["chart"], r["video"], [os.path.join(base, f) for f in r["frames"]], truth=control_truth(r["video"]))
         if a.best and os.path.exists(a.frames_csv):            # optional: the single best frame, for comparison
             for r in csv.DictReader(open(a.frames_csv, encoding="utf-8")):
                 if r.get("best", "").strip() == "1" and (not a.charts or r["chart"] in a.charts):

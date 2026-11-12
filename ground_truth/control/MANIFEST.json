@@ -1,0 +1,96 @@
+{
+  "created": "2026-11-11T03:58:21+00:00",
+  "seed": 20261120,
+  "purpose": "control line charts with random values for the generalisation test",
+  "charts": {
+    "line_control_A": {
+      "design": "same layout as the Gapminder chart (4 lines, 1952-2007 every 5 years), new random values",
+      "series": [
+        "Brazil",
+        "Kenya",
+        "Norway",
+        "Peru"
+      ],
+      "x_axis": "Year",
+      "y_axis": "Life expectancy",
+      "legend_title": "Country",
+      "x_values": "1952-2007 every 5",
+      "values": 48,
+      "sha256": "efe1786170381a2c84e98b9f682a302ec0a1f2891bf876a4673a1cac4dd381f9"
+    },
+    "line_control_B": {
+      "design": "3 lines, 1960-2010 every 10 years, sharp rise and fall",
+      "series": [
+        "Egypt",
+        "Canada",
+        "Vietnam"
+      ],
+      "x_axis": "Year",
+      "y_axis": "Life expectancy",
+      "legend_title": "Country",
+      "x_values": "1960-2010 every 10",
+      "values": 18,
+      "sha256": "f8211f4715f7c09f829059ddb060a11861e57b8de6fa138e492733bd8c556fcf"
+    },
+    "line_control_C": {
+      "design": "harder: 6 lines, 1950-2010 every 5 years (78 values), dips and crossings",
+      "series": [
+        "Mexico",
+        "Ghana",
+        "Poland",
+        "Nepal",
+        "Chile",
+        "Morocco"
+      ],
+      "x_axis": "Year",
+      "y_axis": "Life expectancy",
+      "legend_title": "Country",
+      "x_values": "1950-2010 every 5",
+      "values": 78,
+      "sha256": "a2deb85214160feb9d5ca7415a6f9a159eae0ee776c20e9c2967896d3cd7b08e"
+    },
+    "linexy_control_D": {
+      "design": "monthly sales of 3 products (x = month 1-12, y = thousand units)",
+      "series": [
+        "Product A",
+        "Product B",
+        "Product C"
+      ],
+      "x_axis": "Month",
+      "y_axis": "Sales (thousand units)",
+      "legend_title": "Product",
+      "x_values": "1-12 every 1",
+      "values": 36,
+      "sha256": "e1f412d4a0cc2a59d277656cae54bf7ffd660bdaf828212a7d98f6b57d7e7bf2"
+    },
+    "linexy_control_E": {
+      "design": "energy use of 4 stations through the day (x = hour 0-22, y = kWh)",
+      "series": [
+        "Station A",
+        "Station B",
+        "Station C",
+        "Station D"
+      ],
+      "x_axis": "Hour",
+      "y_axis": "Energy use (kWh)",
+      "legend_title": "Station",
+      "x_values": "0-22 every 2",
+      "values": 48,
+      "sha256": "8918d9cc418f6ebed7e7081207fca74866002d5e71f3787fa1060ebd08e38e1b"
+    },
+    "linexy_control_F": {
+      "design": "price of 3 items over 12 days, small decimal values (x = day, y = dollars)",
+      "series": [
+        "Coffee",
+        "Bread",
+        "Milk"
+      ],
+      "x_axis": "Day",
+      "y_axis": "Price ($)",
+      "legend_title": "Item",
+      "x_values": "1-12 every 1",
+      "values": 36,
+      "sha256": "ddd34ca423ebe0e9e936e7b06a3cc3f7e03603907d3af2ad6a19960742bc738e"
+    }
+  }
+}

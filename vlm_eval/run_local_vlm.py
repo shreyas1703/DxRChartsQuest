@@ -1,8 +1,16 @@
 """Prompt helpers for the VLM scripts: chart_prompt / extract_csv / expected_header (reads vlm_eval/prompts.md)."""
 import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-CHARTS = ["pie", "bar", "scatter", "line", "heatmap"]
-WORDS = {"pie": "pie", "bar": "bar", "scatter": "scatter", "line": "line", "heatmap": "heatmap"}
+CHARTS = ["pie", "bar", "scatter", "line", "heatmap", "linexy"]
+WORDS = {"pie": "pie", "bar": "bar", "scatter": "scatter", "line": "line", "heatmap": "heatmap", "linexy": "linexy"}
+BUILTIN = {"linexy": """These images are frames from a video of one line chart seen in a VR headset while walking around it.
+Read the chart and write its complete data table as CSV.
+- Series: the name of each line, exactly as written in the legend.
+- X: the x-axis value of each point, as printed on the x-axis (numbers only).
+- Y: the y-axis value of each point, read carefully against the y-axis scale and gridlines (numbers only, no units).
+Write one row per point, for every line and every point, in this exact format with this header:
+Series,X,Y
+Output only the CSV."""}
 
 def chart_prompt(chart):
     text = open(os.path.join(HERE, "prompts.md"), encoding="utf-8").read()
@@ -14,6 +22,8 @@ def chart_prompt(chart):
         m = re.search(r"```[a-z]*\s*\n(.*?)```", body, re.S)
         if m:
             return m.group(1).strip()
+    if chart in BUILTIN:
+        return BUILTIN[chart]
     sys.exit(f"No prompt for '{chart}' in vlm_eval/prompts.md")
 
 def extract_csv(answer, header):

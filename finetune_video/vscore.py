@@ -99,3 +99,36 @@ def score_line(gt, pred, year_tol=2.5):
         res["curve_mean_rel_error"] = round(sum(abs(p - t) / t for t, p in curve) / len(curve), 4)
         res["curve_within_5pct"] = round(sum(abs(p - t) <= RELAXED * t for t, p in curve) / len(curve), 3)
     return res
+
+
+def score_linexy(gt, pred):
+    """Any line chart (header Series,X,Y): every true point vs the model's value at the same x. A point the model left
+    out counts as wrong; only if the model wrote different x values altogether is its curve interpolated."""
+    cols_g, cols_p = list(gt[0].keys()), (list(pred[0].keys()) if pred else [])
+    s_g, x_g, y_g = cols_g[:3]
+    s_p, x_p, y_p = (cols_p + ["", "", ""])[:3]
+    series = {}
+    for r in gt:
+        series.setdefault(norm(r[s_g]), []).append((num(r[x_g]), num(r[y_g])))
+    ok = n = found = 0
+    rel = []
+    for k, pts in series.items():
+        p = sorted((num(r.get(x_p)), num(r.get(y_p))) for r in pred if norm(r.get(s_p, "")) == k
+                   and num(r.get(x_p)) is not None and num(r.get(y_p)) is not None)
+        found += bool(p)
+        aligned = sum(any(abs(a - x) < 1e-6 + 0.01 * abs(x) for a, _ in p) for x, _ in pts) >= len(pts) / 2
+        for x, t in pts:
+            n += 1
+            v = next((b for a, b in p if abs(a - x) < 1e-6 + 0.01 * abs(x)), None)
+            if v is None and not aligned:
+                for (a0, b0), (a1, b1) in zip(p, p[1:]):
+                    if a0 <= x <= a1 and a1 > a0:
+                        v = b0 + (b1 - b0) * (x - a0) / (a1 - a0)
+            if v is None or not t:
+                continue
+            e = abs(v - t) / abs(t)
+            rel.append(e); ok += e <= RELAXED
+    res = {"series_found": found, "series_true": len(series), "points_true": n, "points_read": len(rel)}
+    res["curve_within_5pct"] = round(ok / n, 3) if n else 0.0
+    res["curve_mean_rel_error"] = round(sum(rel) / len(rel), 4) if rel else None
+    return res

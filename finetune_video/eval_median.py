@@ -23,7 +23,7 @@ ROOT = os.path.dirname(HERE)
 _spec = importlib.util.spec_from_file_location("eval_video", os.path.join(HERE, "eval_video.py"))
 ev = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(ev)
 vlm, st = ev.vlm, ev.st
-KEYS = {"line": ["Country", "Year"], "pie": ["Genre"], "bar": ["Clarity"], "heatmap": ["Year", "Month"]}
+KEYS = {"line": ["Country", "Year"], "pie": ["Genre"], "bar": ["Clarity"], "heatmap": ["Year", "Month"], "linexy": ["Series", "X"]}
 
 
 def rows_of(text):
@@ -45,7 +45,7 @@ def keyof(chart, r):
     for k in KEYS[chart]:
         v = r.get(k, "")
         n = st.num(v)
-        out.append(str(int(round(n))) if n is not None and k in ("Year",) else st.norm(v))
+        out.append(str(int(round(n))) if n is not None and k == "Year" else (f"{n:g}" if n is not None and k == "X" else st.norm(v)))
     return tuple(out)
 
 
@@ -122,7 +122,7 @@ def main():
     ap.add_argument("--results", default=os.path.join(ROOT, "results_video.csv"))
     a = ap.parse_args()
     if any(c not in KEYS for c in a.charts):
-        sys.exit("median/offset works for line, pie, bar, heatmap (not scatter)")
+        sys.exit("median/offset works for line, linexy, pie, bar, heatmap (not scatter)")
 
     from unsloth import FastVisionModel
     import datetime
@@ -162,6 +162,8 @@ def main():
     def write(set_, inp, chart, clip, n, secs, text, truth=None):
         p = os.path.join(outdir, f"{set_}_{inp}_{clip}.csv")
         open(p, "w", encoding="utf-8").write(text)
+        if set_ == "real" and truth is None:
+            truth = ev.control_truth(clip)
         for m in ev.score(chart, p, truth):
             w.writerow({"time": stamp, "set": set_, "model": a.name, "input": inp, "chart": chart, "clip": clip, "frames": n,
                         "seconds": secs, "prediction": os.path.relpath(p, ROOT), **m}); fh.flush()

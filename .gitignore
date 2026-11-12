@@ -42,3 +42,10 @@ Logs/
 UserSettings/
 *.csproj
 *.sln
+*.mp4
+*.mov
+*.safetensors
+*.bin
+lora_*/
+finetune_video/data_*/
+real_clips*/
