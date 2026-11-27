@@ -1,8 +1,8 @@
 """Prompt helpers for the VLM scripts: chart_prompt / extract_csv / expected_header (reads vlm_eval/prompts.md)."""
 import os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
-CHARTS = ["pie", "bar", "scatter", "line", "heatmap", "linexy"]
-WORDS = {"pie": "pie", "bar": "bar", "scatter": "scatter", "line": "line", "heatmap": "heatmap", "linexy": "linexy"}
+CHARTS = ["pie", "bar", "scatter", "line", "heatmap", "linexy", "pieany", "bar3d"]
+WORDS = {"pie": "pie", "bar": "bar", "scatter": "scatter", "line": "line", "heatmap": "heatmap", "linexy": "linexy", "pieany": "pieany", "bar3d": "bar3d"}
 BUILTIN = {"linexy": """These images are frames from a video of one line chart seen in a VR headset while walking around it.
 Read the chart and write its complete data table as CSV.
 - Series: the name of each line, exactly as written in the legend.
@@ -10,6 +10,23 @@ Read the chart and write its complete data table as CSV.
 - Y: the y-axis value of each point, read carefully against the y-axis scale and gridlines (numbers only, no units).
 Write one row per point, for every line and every point, in this exact format with this header:
 Series,X,Y
+Output only the CSV.""",
+"pieany": """These images are frames from a video of one pie chart seen in a VR headset while walking around it.
+Read the chart and write its complete data table as CSV.
+- Category: the name of each slice, exactly as written in the legend or on the slice label.
+- Share_percent: the share of the whole pie that the slice covers, in percent, with one decimal (numbers only).
+Write one row per slice, for every slice, largest first, in this exact format with this header:
+Category,Share_percent
+Output only the CSV.""",
+"bar3d": """These images are frames from a video of one 3D bar chart seen in a VR headset while walking around it.
+The bars stand in a grid: the categories run along the front axis, the series go back in depth (or are shown in the
+legend by colour), and the height of each bar is its value on the vertical axis.
+Read the chart and write its complete data table as CSV, one row for every bar:
+- Category: the category label of the bar, exactly as written on the front axis.
+- Series: the series of the bar, exactly as written on the depth axis or in the legend.
+- Value: the height of the bar read from the vertical axis (numbers only).
+Write the rows category by category, in this exact format with this header:
+Category,Series,Value
 Output only the CSV."""}
 
 def chart_prompt(chart):

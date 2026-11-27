@@ -70,7 +70,7 @@ def real_names():
             for f in os.listdir(ctrl):
                 if f.endswith(".csv"):
                     for row in csv.DictReader(open(os.path.join(ctrl, f), encoding="utf-8")):
-                        for k in ("Country", "Series"):
+                        for k in ("Country", "Series", "Category"):
                             if row.get(k):
                                 names.add(row[k].strip())
     return names
@@ -91,12 +91,140 @@ def style_ticks(ax, size, zaxis=False):
 
 # ------------------------------------------------------------------ random tables
 def data_pie(rng):
-    n = rng.randint(4, 9)
+    if rng.random() < 0.65:            # pie r1: DxR-like pies have 5-10 fairly even slices
+        n = rng.randint(5, 10)
+        w = np.array([rng.uniform(0.45, 1.6) for _ in range(n)])
+    else:
+        n = rng.randint(4, 9)
+        w = np.array([rng.random() ** 1.6 + 0.04 for _ in range(n)])
     names = rng.sample(pool(GENRES), n)
-    w = np.array([rng.random() ** 1.6 + 0.04 for _ in range(n)])
     share = np.round(w / w.sum() * 100, 1)
     share[np.argmax(share)] += round(100 - share.sum(), 1)
     return "Genre,Share_percent", [(names[i], round(float(share[i]), 1)) for i in np.argsort(-share)]
+
+
+def data_pieany(rng):
+    """pie r2: a pie about anything (header Category,Share_percent), 3-11 slices, even or lopsided."""
+    if rng.random() < 0.6:
+        n = rng.randint(4, 10)
+        w = np.array([rng.uniform(0.45, 1.6) for _ in range(n)])
+    else:
+        n = rng.randint(3, 10)
+        w = np.array([rng.random() ** 1.6 + 0.04 for _ in range(n)])
+    fams = [f for f in PIE_FAMILIES if len(pool(f[1])) >= n]
+    legend_t, src, measures = rng.choice(fams)
+    names = rng.sample(pool(src), n)
+    share = np.round(w / w.sum() * 100, 1)
+    share[np.argmax(share)] += round(100 - share.sum(), 1)
+    m = rng.choice(measures)
+    title = rng.choice([f"{m} by {legend_t.lower()}", f"{m} by {legend_t.lower()} (%)", f"Share of {m.lower()}", m])
+    return ("Category,Share_percent", [(names[i], round(float(share[i]), 1)) for i in np.argsort(-share)],
+            {"legend": legend_t, "title": title})
+
+
+
+
+def nice_step(hi):
+    raw = hi / 6
+    mag = 10 ** math.floor(math.log10(raw))
+    return next(m * mag for m in (1, 2, 2.5, 5, 10) if m * mag >= raw)
+
+
+def bar_values(rng, k, hi):
+    """k values between ~8 % and ~97 % of hi, no two closer than ~6 % of hi, rounded like real chart data."""
+    gap = hi * rng.uniform(0.06, 0.09) if k <= 12 else hi * 0.05
+    dec = 2 if hi <= 1 else 1 if hi <= 20 else 0
+    for _ in range(200):
+        v = sorted(rng.uniform(0.08, 0.97) * hi for _ in range(k))
+        if all(b - a >= gap for a, b in zip(v, v[1:])):
+            break
+    else:
+        v = [hi * (0.08 + 0.89 * i / max(1, k - 1)) for i in range(k)]
+    if hi >= 1000 and rng.random() < 0.5:                 # sometimes round to tens/hundreds like real tables
+        v = [round(x, -1 if hi < 10000 else -2) for x in v]
+    v = [round(x, dec) if dec else int(round(x)) for x in v]
+    rng.shuffle(v)
+    return v
+
+
+def data_bar3d(rng):
+    nc = rng.choice([2, 3, 3, 4, 4, 4, 5, 5, 6])
+    ns = rng.choice([1, 1, 2, 2, 3, 3, 3, 4])
+    while nc * ns > 16:
+        ns -= 1
+    cats = [c for c in BAR_CATS if len(pool(c[1])) >= nc]
+    cat_t, cpool = rng.choice(cats)
+    if cat_t == "Quarter" or cat_t == "Month":
+        p = pool(cpool); i0 = rng.randint(0, len(p) - nc); cnames = p[i0:i0 + nc]
+    else:
+        cnames = rng.sample(pool(cpool), nc)
+    ser_opts = [s_ for s_ in BAR_SERIES if s_[1] is None or len(pool(s_[1])) >= ns]
+    ser_t, spool = rng.choice(ser_opts)
+    if spool is None:
+        y0 = rng.randint(1995, 2026 - ns)
+        snames = [str(y) for y in range(y0, y0 + ns) if str(y) not in CFG["banned"]]
+        if len(snames) < ns:
+            ser_t, spool = "Group", ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]
+    if spool is not None:
+        snames = rng.sample(pool(spool), ns)
+    snames = [s_ for s_ in snames if s_ not in cnames][:ns] or ["All"]
+    hi = rng.choice(NICE_MAX)
+    vals = bar_values(rng, len(cnames) * len(snames), hi * rng.uniform(0.85, 1.0))
+    m, unit = rng.choice(BAR_MEASURES)
+    rows = [(c, s_, vals[i * len(snames) + j]) for i, c in enumerate(cnames) for j, s_ in enumerate(snames)]
+    spec = {"cat": cat_t, "ser": ser_t, "measure": m + unit,
+            "title": rng.choice([f"{m} by {cat_t.lower()} and {ser_t.lower()}", f"{m} by {cat_t.lower()}", m])}
+    return "Category,Series,Value", rows, spec
+
+
+def scene_bar3d(rng, rows, spec):
+    """bar r1: a grid of 3D bars (categories along x, series back in depth y, value up z), grid on the walls,
+    tick labels on the axes, sometimes a legend, never value labels (the model must read heights)."""
+    fig = plt.figure(figsize=(8, 6), facecolor=rng.choice([BG, BG, "#ffffff", "#2b2f36"]))
+    ax = fig.add_subplot(111, projection="3d", facecolor=fig.get_facecolor())
+    cats = list(dict.fromkeys(r[0] for r in rows)); sers = list(dict.fromkeys(r[1] for r in rows))
+    nc, ns = len(cats), len(sers)
+    pal = rng.choice([DXR_COLS, PALETTE, ["#4472c4", "#c0504d", "#9bbb59", "#8064a2", "#f79646", "#4bacc6"]])
+    cols = pal[:ns] if rng.random() < 0.6 else rng.sample(pal, ns)
+    one_colour = ns == 1 or rng.random() < 0.15
+    if one_colour:
+        cols = [rng.choice(pal)] * ns
+    w, dx, dy = rng.uniform(0.45, 0.75), rng.uniform(1.2, 1.7), rng.uniform(1.2, 1.9)
+    vmax = max(r[2] for r in rows)
+    step = nice_step(vmax)
+    top = math.ceil(vmax / step) * step
+    rng.random(); show_vals = False   # bar r1c: never print values on the bars (the test charts have none)
+    dark = fig.get_facecolor()[0] < 0.5
+    xs, ys, hs, cs = [], [], [], []
+    for (c, s_, v) in rows:                              # one bar3d call, so matplotlib sorts the bars by depth
+        xs.append(cats.index(c) * dx); ys.append(sers.index(s_) * dy); hs.append(v); cs.append(cols[sers.index(s_)])
+    ax.bar3d(xs, ys, [0] * len(xs), w, w, hs, color=cs, shade=True, edgecolor=rng.choice(["none", "none", "#333333"]), linewidth=0.3)
+    for (c, s_, v) in rows:
+        i, j = cats.index(c), sers.index(s_)
+        if show_vals:
+            ax.text(i * dx + w / 2, j * dy + w / 2, v + top * 0.03, f"{v:g}", ha="center", fontsize=rng.choice([6, 7, 8]),
+                    color="white", bbox=label_box())
+    ax.set_xticks([i * dx + w / 2 for i in range(nc)]); ax.set_xticklabels(cats)
+    ax.set_yticks([j * dy + w / 2 for j in range(ns)]); ax.set_yticklabels(sers if ns > 1 or rng.random() < 0.6 else [""])
+    ax.set_zticks(np.arange(0, top + step / 2, step))
+    ax.set_zticklabels([f"{t:g}" for t in np.arange(0, top + step / 2, step)])
+    ax.set_xlim(-0.4, (nc - 1) * dx + w + 0.4); ax.set_ylim(-0.4, (ns - 1) * dy + w + 0.4); ax.set_zlim(0, top)
+    pane = rng.choice([(0.93, 0.94, 0.95, 1.0), (1, 1, 1, 0.0), (0.85, 0.87, 0.9, 1.0), (0.2, 0.22, 0.26, 1.0)])
+    for a in (ax.xaxis, ax.yaxis, ax.zaxis):
+        a.set_pane_color(pane)
+        a._axinfo["grid"]["color"] = (0.55, 0.55, 0.6, rng.uniform(0.4, 1.0))
+    style_ticks(ax, rng.choice([9, 10, 11]), zaxis=True)
+    if rng.random() < 0.7:
+        ax.set_zlabel(spec["measure"], color="#f3e3a6", fontsize=8)
+    if ns > 1 and rng.random() < 0.6:                    # legend as well as (or instead of) the depth-axis labels
+        fig.text(0.86, 0.80, spec["ser"], color="#f3e3a6", fontsize=9, bbox=label_box())
+        for j, s_ in enumerate(sers):
+            fig.text(0.88, 0.75 - j * 0.045, s_, color="white", fontsize=8, bbox=label_box())
+            fig.patches.append(plt.Rectangle((0.855, 0.745 - j * 0.045), 0.015, 0.02, color=cols[j], transform=fig.transFigure, figure=fig))
+    ax.set_box_aspect(((nc - 1) * dx + w + 0.8, max(1.2, (ns - 1) * dy + w + 0.8), rng.uniform(2.6, 4.2)), zoom=rng.uniform(1.0, 1.22))
+    fig.subplots_adjust(left=0, right=0.86 if ns > 1 else 1, bottom=0, top=0.95)
+    fig.text(0.5, 0.92, spec["title"], ha="center", color="white", fontsize=11, bbox=label_box(TITLE_BG))
+    return fig, ax, rng.uniform(-125, -55), rng.uniform(5, 38)
 
 
 def data_bar(rng):
@@ -143,6 +271,42 @@ YMEASURES = [("Sales (units)", 100), ("Revenue (million $)", 10), ("Temperature 
              ("Conversion rate (%)", 10), ("Energy use (kWh)", 1000), ("Visitors", 10000), ("Weight (kg)", 10),
              ("Height (cm)", 100), ("Index", 100), ("Share (%)", 10), ("Cost (thousand $)", 100), ("Growth rate", 1)]
 LEGEND_OF = {"city": "City", "product": "Product", "team": "Team", "sensor": "Group", "country": "Country"}
+# pie r2 ("pieany"): pies about anything. Category names come from many families; the answer header is always
+# Category,Share_percent. Names of the test pies (ground_truth/control/pieany_*.csv) are banned by --strict.
+BRANDS = ("Zentro Lumina Nordia Vexa Kairo Solenne Brisk Mirra Quanta Novella Strata Pivot Halcyon Juniper Cobalt Verve "
+          "Arcadia Nimbus Corvo Pellar").split()
+ENERGY = "Solar Wind Hydro Nuclear Coal Gas Oil Biomass Geothermal Tidal Imports Waste".split()
+FOODS = "Rice Wheat Maize Beans Fruit Vegetables Dairy Meat Fish Nuts Eggs Sugar Oils Roots".split()
+MODES = "Car Bus Train Bicycle Walking Tram Ferry Scooter Taxi Subway Carpool Motorbike".split()
+DEPTS = "Sales Marketing Research Support Finance Legal Operations Design Engineering Admin Logistics Training".split()
+REGIONS = "North South East West Central Coastal Highlands Lowlands Islands Metro Rural Suburbs".split()
+SPEND = ("Housing Groceries Transport Health Leisure Savings Utilities Education Clothing Travel Insurance Gifts Dining "
+         "Childcare").split()
+PIE_FAMILIES = [("Country", COUNTRIES, ["Population", "Visitors", "Exports", "Votes"]),
+                ("City", CITIES, ["Visitors", "Sales", "Population"]),
+                ("Product", PRODUCTS, ["Sales", "Revenue", "Orders"]),
+                ("Team", TEAMS, ["Fans", "Wins", "Budget"]),
+                ("Brand", BRANDS, ["Market share", "Sales", "Users"]),
+                ("Source", ENERGY, ["Electricity mix", "Energy supply", "Power generation"]),
+                ("Food", FOODS, ["Diet", "Production", "Imports"]),
+                ("Mode", MODES, ["Commute", "Trips", "Passengers"]),
+                ("Department", DEPTS, ["Budget", "Staff", "Costs"]),
+                ("Region", REGIONS, ["Revenue", "Population", "Sales"]),
+                ("Category", SPEND, ["Spending", "Budget", "Expenses"]),
+                ("Genre", GENRES, ["Sales", "Players"])]
+# bar r1 ("bar3d"): a 3D grid of bars - categories along the front, series going back in depth, one value per bar.
+# Answer header Category,Series,Value. Values are spread out (no two bars within ~6 % of the axis maximum).
+BAR_CATS = [("Quarter", ["Q1", "Q2", "Q3", "Q4"]), ("Quarter", ["Qtr 1", "Qtr 2", "Qtr 3", "Qtr 4"]),
+            ("Month", MONTHS), ("Product", PRODUCTS), ("City", CITIES), ("Team", TEAMS), ("Department", DEPTS),
+            ("Region", REGIONS), ("Brand", BRANDS), ("Food", FOODS), ("Mode", MODES), ("Source", ENERGY),
+            ("Grade", GRADES), ("Country", COUNTRIES)]
+BAR_SERIES = [("Year", None), ("Store", ["Store A", "Store B", "Store C", "Store D", "Store E"]),
+              ("Scenario", ["Low", "Medium", "High", "Target", "Actual", "Forecast", "Budget", "Plan"]),
+              ("Group", ["Group 1", "Group 2", "Group 3", "Group 4", "Group 5"]), ("Region", REGIONS), ("Team", TEAMS),
+              ("Shift", ["Morning", "Evening", "Night", "Weekend"]), ("Channel", ["Online", "Retail", "Phone", "Partner", "Kiosk"])]
+BAR_MEASURES = [("Sales", ""), ("Revenue", " (USD)"), ("Units sold", ""), ("Visitors", ""), ("Energy", " (kWh)"), ("Cost", " ($)"),
+                ("Score", ""), ("Orders", ""), ("Rainfall", " (mm)"), ("Profit", " (k$)"), ("Output", " (tons)"), ("Users", "")]
+NICE_MAX = [1, 5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000, 30000, 50000, 100000]
 
 
 def data_linexy(rng):
@@ -225,18 +389,35 @@ def legend(fig, rng, title, names, cols, x=0.72, y=0.85, marker="s"):
         lx.text(0.12, yy, n, color="white", fontsize=9, va="center", bbox=label_box())
 
 
-def render_pie(rng, rows):
+def render_pie(rng, rows, spec=None):
     fig = plt.figure(figsize=(8, 6), facecolor=BG)
     ax = fig.add_axes([0.08, 0.08, 0.6, 0.78])
-    cols = rng.sample(PALETTE, len(rows))
-    wedges, _ = ax.pie([r[1] for r in rows], colors=cols, startangle=rng.uniform(0, 360), counterclock=rng.random() < 0.5)
+    rows = list(rows)
+    if rng.random() < 0.5:             # pie r1: slice order is not always largest-first
+        rng.shuffle(rows)
+    dxr = rng.random() < 0.7           # pie r1: DxR colour order and start at 12 o'clock, clockwise
+    cols = PALETTE[:len(rows)] if dxr else rng.sample(PALETTE, len(rows))
+    kw = dict(startangle=90 if dxr else rng.uniform(0, 360), counterclock=False if dxr else rng.random() < 0.5)
+    vals, thick, squash = [r[1] for r in rows], 0, 1.0
+    if spec is not None:               # pie r2: slices cut out of a disc - exploded slices and/or a 3D thick disc
+        if rng.random() < 0.35:
+            out = rng.uniform(0.05, 0.16)
+            kw["explode"] = [out if rng.random() < 0.75 else 0.0 for _ in rows]
+        if rng.random() < 0.4:
+            thick, squash, depth = rng.randint(8, 16), rng.uniform(0.45, 0.75), rng.uniform(0.15, 0.3)
+            dark = [tuple(c * rng.uniform(0.55, 0.7) for c in matplotlib.colors.to_rgb(col)) for col in cols]
+            for k in range(thick, 0, -1):
+                ax.pie(vals, colors=dark, center=(0, -depth * k / thick), **kw)
+    wedges, _ = ax.pie(vals, colors=cols, **kw)
     for w, (name, _) in zip(wedges, rows):
         a = math.radians((w.theta1 + w.theta2) / 2)
         ax.text(1.25 * math.cos(a), 1.2 * math.sin(a), name, ha="center", va="center", fontsize=rng.choice([8, 9, 10]),
                 color="white", bbox=label_box())
-    ax.set_aspect("equal")
-    legend(fig, rng, rng.choice(["Genre", "Category", "Type"]), [r[0] for r in rows], cols)
-    fig.text(0.38, 0.93, rng.choice(["Sales by genre", "Share by category", "Market share"]), ha="center", color="white",
+    ax.set_aspect(squash)
+    if thick:
+        ax.autoscale_view()
+    legend(fig, rng, spec["legend"] if spec else rng.choice(["Genre", "Category", "Type"]), [r[0] for r in rows], cols)
+    fig.text(0.38, 0.93, spec["title"] if spec else rng.choice(["Sales by genre", "Share by category", "Market share"]), ha="center", color="white",
              fontsize=11, bbox=label_box(TITLE_BG))
     return fig_to_img(fig)
 
@@ -390,6 +571,49 @@ def scene_scatter(rng, rows):
     return fig, ax, rng.uniform(-100, -50), rng.uniform(5, 30)
 
 
+DXR_COLS = ["#ff9f1c", "#ff4fa3", "#7ee36b", "#ffe14d", "#4fc3f7", "#b388ff"]
+
+
+def scene_line3d(rng, rows, spec):
+    """Run 6: a line chart drawn the way DxR draws it in VR - a 3D box with the grid on the back wall, the lines
+    floating at some depth in front of it, tick labels on the front edges, seen from below/above and from the side."""
+    from matplotlib.ticker import MaxNLocator
+    fig = plt.figure(figsize=(8, 6), facecolor=BG)
+    ax = fig.add_subplot(111, projection="3d", facecolor=BG)
+    names = list(dict.fromkeys(r[0] for r in rows))
+    pal = DXR_COLS[:] if rng.random() < 0.6 else PALETTE[:7]
+    cols = rng.sample(pal, len(names)) if len(names) <= len(pal) else (pal * 2)[:len(names)]
+    depth = rng.uniform(0.15, 0.85)                     # where the lines float between the front and the back wall
+    lw, ms = rng.choice([2, 3, 3, 4, 5]), rng.choice([3, 4, 5, 6])
+    for n, c in zip(names, cols):
+        pts = [(r[1], r[2]) for r in rows if r[0] == n]
+        ax.plot([p[0] for p in pts], [depth] * len(pts), [p[1] for p in pts], color=c, lw=lw, marker="o", ms=ms)
+    xs = sorted({r[1] for r in rows}); ys = [r[2] for r in rows]
+    ax.set_ylim(0, 1); ax.set_yticks([])
+    ax.zaxis.set_major_locator(MaxNLocator(nbins=rng.choice([4, 5, 6, 7])))
+    pad = (max(ys) - min(ys)) * rng.uniform(0.05, 0.3)
+    ax.set_zlim(min(ys) - pad, max(ys) + pad * rng.uniform(0.3, 1.0))
+    if len(xs) <= 13:
+        ax.set_xticks(xs)
+    ax.set_position([-0.04, -0.02, 0.92, 1.0])
+    ax.set_box_aspect((rng.uniform(1.5, 1.9), rng.uniform(0.12, 0.35), 1), zoom=rng.uniform(1.05, 1.2))
+    ax.zaxis._axinfo["juggled"] = (1, 2, 0)            # value axis on the left, like DxR
+    for a in (ax.xaxis, ax.yaxis, ax.zaxis):
+        a.set_pane_color((0.93, 0.94, 0.95, 1.0))
+        a._axinfo["grid"]["color"] = (0.55, 0.57, 0.6, 1.0)
+    style_ticks(ax, rng.choice([7, 8]), zaxis=True)
+    ax.set_xlabel(spec["x"], color="#f3e3a6", fontsize=8, bbox=label_box())
+    ax.set_zlabel(spec["y"], color="#f3e3a6", fontsize=8, bbox=label_box())
+    lx = rng.choice([0.82, 0.86])
+    fig.text(lx, 0.82, spec["legend"], color="#f3e3a6", fontsize=9, bbox=label_box())
+    for i, n in enumerate(names):
+        fig.text(lx + 0.02, 0.77 - i * 0.045, n, color="white", fontsize=8, bbox=label_box())
+        fig.patches.append(plt.Circle((lx + 0.005, 0.778 - i * 0.045), 0.007, color=cols[names.index(n)], transform=fig.transFigure, figure=fig))
+    fig.text(0.45, 0.93, f"{spec['y'].split(' (')[0]} by {spec['x'].split(' (')[0].lower()}", ha="center", color="white",
+             fontsize=11, bbox=label_box(TITLE_BG))
+    return fig, ax, rng.uniform(-105, -75), rng.uniform(-4, 22)
+
+
 # ------------------------------------------------------------------ camera and headset look
 def homography(src, dst):
     a = []
@@ -438,13 +662,13 @@ def headset_look(img, p, rng, size):
 
 
 def to_csv(header, rows, kind):
-    one = {("pie", 1), ("line", 2), ("bar", 1)}
+    one = {("pie", 1), ("pieany", 1), ("line", 2), ("bar", 1)}
     return header + "\n" + "\n".join(",".join(f"{v:.1f}" if (kind, i) in one else str(v) for i, v in enumerate(r)) for r in rows) + "\n"
 
 
 DATA = {"pie": data_pie, "bar": data_bar, "line": data_line, "heatmap": data_heatmap, "scatter": data_scatter,
-        "linexy": data_linexy}
-MIX = {"pie": 0.16, "bar": 0.30, "line": 0.14, "heatmap": 0.28, "scatter": 0.12, "linexy": 0.14}
+        "linexy": data_linexy, "pieany": data_pieany, "bar3d": data_bar3d}
+MIX = {"pie": 0.16, "bar": 0.30, "line": 0.14, "heatmap": 0.28, "scatter": 0.12, "linexy": 0.14, "pieany": 0.16, "bar3d": 0.3}
 
 
 def make_clip(kind, rng, n, size):
@@ -454,25 +678,39 @@ def make_clip(kind, rng, n, size):
     sweep = rng.uniform(40, 80) * rng.choice([-1, 1])            # degrees the viewer walks around the chart
     ts = [i / max(1, n - 1) for i in range(n)]
     frames = []
-    if kind in ("bar", "scatter") or (kind == "heatmap" and rng.random() < 0.5):
-        fig, ax, az0, elev = {"bar": scene_bar, "scatter": scene_scatter}.get(kind, scene_heatmap3d)(rng, rows)
+    line3d = kind in ("line", "linexy") and rng.random() < CFG.get("line3d", 0.0)
+    if kind in ("bar", "scatter", "bar3d") or (kind == "heatmap" and rng.random() < 0.5) or line3d:
+        if kind == "bar3d":
+            fig, ax, az0, elev = scene_bar3d(rng, rows, spec)
+            sweep = rng.uniform(30, 70) * rng.choice([-1, 1])
+        elif line3d:
+            sp = spec or {"x": "Year", "y": "Life expectancy (years)", "legend": "Country"}
+            fig, ax, az0, elev = scene_line3d(rng, rows, sp)
+        else:
+            fig, ax, az0, elev = {"bar": scene_bar, "scatter": scene_scatter}.get(kind, scene_heatmap3d)(rng, rows)
         for t in ts:
             ax.view_init(elev=elev + rng.uniform(-2, 2), azim=az0 + sweep * (t - 0.5))
             frames.append(headset_look(fig_to_img(fig, close=False), p, rng, size))
         plt.close(fig)
     else:
-        img = render_linexy(rng, rows, spec) if kind == "linexy" else {"pie": render_pie, "line": render_line, "heatmap": render_heatmap}[kind](rng, rows)
+        if kind == "linexy":
+            img = render_linexy(rng, rows, spec)
+        elif kind in ("pie", "pieany"):
+            img = render_pie(rng, rows, spec)
+        else:
+            img = {"line": render_line, "heatmap": render_heatmap}[kind](rng, rows)
         pitch = rng.uniform(-15, 15)
         yaw0 = rng.uniform(-15, 15)
         for t in ts:
-            yaw = max(-70, min(70, yaw0 + sweep * (t - 0.5)))
+            lim = 82 if kind in ("pie", "pieany") else 70   # pie r1: the Quest walk-around reaches near edge-on views
+            yaw = max(-lim, min(lim, yaw0 + sweep * (t - 0.5)))
             frames.append(headset_look(view_flat(img, yaw, pitch + rng.uniform(-2, 2)), p, rng, size))
     return frames, to_csv(header, rows, kind)
 
 
 def job(args):
-    split, i, kind, seed, n, size, out, strict, banned = args
-    CFG["strict"], CFG["banned"] = strict, banned
+    split, i, kind, seed, n, size, out, strict, banned, line3d = args
+    CFG["strict"], CFG["banned"], CFG["line3d"] = strict, banned, line3d
     rng = random.Random(seed)
     frames, answer = make_clip(kind, rng, n, size)
     rel = f"clips/{split}_{kind}_{i:06d}"
@@ -496,10 +734,12 @@ def main():
     ap.add_argument("--workers", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     ap.add_argument("--preview", type=int, help="write one contact sheet per chart type with N clips, nothing else")
     ap.add_argument("--charts", nargs="+", choices=list(DATA), help="only these chart types, e.g. --charts line (default: all)")
+    ap.add_argument("--line3d", type=float, default=0.0, help="share of line charts drawn as DxR-like 3D charts (run 6: 0.7)")
+    ap.add_argument("--weights", help="mix of the chosen chart types, e.g. linexy=0.7,line=0.3 (default: built-in mix)")
     a = ap.parse_args()
     size = tuple(int(v) for v in a.size.lower().split("x"))
     banned = real_names() if a.strict else set()
-    CFG["strict"], CFG["banned"] = a.strict, banned
+    CFG["strict"], CFG["banned"], CFG["line3d"] = a.strict, banned, a.line3d
     os.makedirs(a.out, exist_ok=True)
     rng = random.Random(a.seed)
     if a.preview:
@@ -514,8 +754,11 @@ def main():
             print("wrote", os.path.join(a.out, f"preview_{kind}.jpg"))
         return
     kinds = a.charts or list(MIX)
+    if a.weights:
+        for kv in a.weights.split(","):
+            k, v = kv.split("="); MIX[k.strip()] = float(v)
     for split, n in (("train", a.train), ("val", a.val)):
-        jobs = [(split, i, rng.choices(kinds, weights=[MIX[k] for k in kinds])[0], rng.random(), a.frames, size, a.out, a.strict, banned)
+        jobs = [(split, i, rng.choices(kinds, weights=[MIX[k] for k in kinds])[0], rng.random(), a.frames, size, a.out, a.strict, banned, a.line3d)
                 for i in range(n)]
         with Pool(a.workers) as p, open(os.path.join(a.out, f"{split}.jsonl"), "w", encoding="utf-8") as fh:
             for k, rec in enumerate(p.imap(job, jobs, chunksize=4), 1):

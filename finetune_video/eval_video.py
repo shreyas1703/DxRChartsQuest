@@ -97,10 +97,10 @@ def score(chart, pred_path, truth_csv=None):
         r = st.score_line(gt, pred)
         return [{"measure": "Life_expectancy", "structure": round(r["series_found"] / r["series_true"], 3),
                  "value_acc": r.get("curve_within_5pct", 0), "value_mre": r.get("curve_mean_rel_error", ""), "flags": fl}]
-    r = st.score_labeled(chart, gt, pred)
+    r = (_fb if chart in ("pieany", "bar3d") else st).score_labeled(chart, gt, pred)
     out = [{"measure": c, "structure": r["row_recall"], "value_acc": m["relaxed_accuracy"],
             "value_mre": m["mean_rel_error"] if m["mean_rel_error"] is not None else "", "flags": fl}
-           for c, m in r["columns"].items() if not (chart == "pie" and c != "Share_percent")]
+           for c, m in r["columns"].items() if not (chart in ("pie", "pieany") and c != "Share_percent")]
     return out or [{"measure": "all", "structure": r["row_recall"], "value_acc": 0, "value_mre": "", "flags": fl}]
 
 

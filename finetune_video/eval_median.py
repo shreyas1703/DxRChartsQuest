@@ -23,7 +23,7 @@ ROOT = os.path.dirname(HERE)
 _spec = importlib.util.spec_from_file_location("eval_video", os.path.join(HERE, "eval_video.py"))
 ev = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(ev)
 vlm, st = ev.vlm, ev.st
-KEYS = {"line": ["Country", "Year"], "pie": ["Genre"], "bar": ["Clarity"], "heatmap": ["Year", "Month"], "linexy": ["Series", "X"]}
+KEYS = {"line": ["Country", "Year"], "pie": ["Genre"], "bar": ["Clarity"], "heatmap": ["Year", "Month"], "linexy": ["Series", "X"], "pieany": ["Category"], "bar3d": ["Category", "Series"]}
 
 
 def rows_of(text):
@@ -91,6 +91,19 @@ def offsets(chart, pairs, vals_cols):
                     if p is not None and g is not None:
                         diffs[c].append(p - g)
     return {c: round(statistics.median(d), 3) if d else 0.0 for c, d in diffs.items()}
+
+
+def to100(text, col="Share_percent"):
+    """pie r2: a pie always adds up to 100 %, so rescale the shares to total 100 (uses no true values)."""
+    rs = rows_of(text)
+    tot = sum(st.num(r.get(col)) or 0 for r in rs) if rs else 0
+    if not rs or tot <= 0 or col not in rs[0]:
+        return text
+    cols = list(rs[0].keys())
+    out = [",".join(cols)]
+    for r in rs:
+        out.append(",".join(f"{st.num(r[c]) * 100 / tot:.1f}" if c == col and st.num(r.get(c)) is not None else r.get(c, "") for c in cols))
+    return "\n".join(out) + "\n"
 
 
 def shift(text, chart, off):
@@ -179,6 +192,8 @@ def main():
             pairs.append((med, r["answer"])); pairs_v.append((answers[0], r["answer"]))
             write("synthetic", "video", chart, f"val{i}", len(r["frames"]), secs, answers[0], r["answer"])
             write("synthetic", "median", chart, f"val{i}", len(r["frames"]), secs, med, r["answer"])
+            if chart in ("pie", "pieany"):
+                write("synthetic", "median_norm", chart, f"val{i}", len(r["frames"]), secs, to100(med), r["answer"])
         off = offsets(chart, pairs, vals_cols); off_v = offsets(chart, pairs_v, vals_cols)
         print(f"{chart}: offset learnt on synthetic clips only = median {off}, video {off_v}")
         json.dump({"chart": chart, "offset": off, "offset_video": off_v, "synthetic_clips": len(pairs)}, open(os.path.join(outdir, f"offset_{chart}.json"), "w"), indent=1)
@@ -191,6 +206,9 @@ def main():
             write("real", "median", chart, r["video"], len(r["frames"]), secs, med)
             write("real", "median_cal", chart, r["video"], len(r["frames"]), secs, shift(med, chart, off))
             write("real", "video_cal", chart, r["video"], len(r["frames"]), secs, shift(answers[0], chart, off_v))
+            if chart in ("pie", "pieany"):          # pie r2: pre-registered main result = median rescaled to 100 %
+                write("real", "median_norm", chart, r["video"], len(r["frames"]), secs, to100(med))
+                write("real", "video_norm", chart, r["video"], len(r["frames"]), secs, to100(answers[0]))
     fh.close()
     print(f"Done -> {a.results}")
 

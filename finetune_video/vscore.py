@@ -3,7 +3,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 GT = os.path.join(os.path.dirname(HERE), "ground_truth")
 FILES = {"pie": "pie_vgsales_genre.csv", "bar": "bar_diamonds_clarity.csv", "scatter": "scatter_penguins.csv",
          "line": "line_gapminder_lifeexp.csv", "heatmap": "heatmap_air_passengers.csv"}
-LABEL = {"pie": ["Genre"], "bar": ["Clarity"], "line": ["Country", "Year"], "heatmap": ["Year", "Month"]}
+LABEL = {"pie": ["Genre"], "pieany": ["Category"], "bar3d": ["Category", "Series"], "bar": ["Clarity"], "line": ["Country", "Year"], "heatmap": ["Year", "Month"]}
 SKIP = {}
 MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
 RELAXED = 0.05
@@ -116,14 +116,24 @@ def score_linexy(gt, pred):
         p = sorted((num(r.get(x_p)), num(r.get(y_p))) for r in pred if norm(r.get(s_p, "")) == k
                    and num(r.get(x_p)) is not None and num(r.get(y_p)) is not None)
         found += bool(p)
-        aligned = sum(any(abs(a - x) < 1e-6 + 0.01 * abs(x) for a, _ in p) for x, _ in pts) >= len(pts) / 2
-        for x, t in pts:
+        pts = sorted(pts)
+        gaps = [x1 - x0 for (x0, _), (x1, _) in zip(pts, pts[1:]) if x1 > x0]
+        tol = 0.25 * min(gaps) if gaps else 1e-6                    # "same x" = within a quarter of the x spacing
+        aligned = sum(any(abs(a - x) <= tol for a, _ in p) for x, _ in pts) >= len(pts) / 2
+        if aligned:                                   # model wrote the chart's own x values: score every true point
+            pairs = [(t, next((b for a, b in p if abs(a - x) <= tol), None)) for x, t in pts]
+        else:                                         # dense data (e.g. yearly) read at fewer x: score the model's points
+            pairs = []
+            for a, b in p:
+                t = next((tt for x, tt in pts if abs(x - a) <= tol), None)
+                if t is None:
+                    for (x0, t0), (x1, t1) in zip(pts, pts[1:]):
+                        if x0 <= a <= x1 and x1 > x0:
+                            t = t0 + (t1 - t0) * (a - x0) / (x1 - x0)
+                if t is not None:
+                    pairs.append((t, b))
+        for t, v in pairs:
             n += 1
-            v = next((b for a, b in p if abs(a - x) < 1e-6 + 0.01 * abs(x)), None)
-            if v is None and not aligned:
-                for (a0, b0), (a1, b1) in zip(p, p[1:]):
-                    if a0 <= x <= a1 and a1 > a0:
-                        v = b0 + (b1 - b0) * (x - a0) / (a1 - a0)
             if v is None or not t:
                 continue
             e = abs(v - t) / abs(t)

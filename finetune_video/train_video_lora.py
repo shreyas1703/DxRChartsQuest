@@ -41,6 +41,8 @@ def main():
     ap.add_argument("--max-side", type=int, default=640, help="frame size in pixels (longest side)")
     ap.add_argument("--max-length", type=int, default=8192)
     ap.add_argument("--out", default=os.path.join(ROOT, "lora_qwen35_video"))
+    ap.add_argument("--save-dir", help="keep a checkpoint here every --save-steps (e.g. in Google Drive) and resume from it")
+    ap.add_argument("--save-steps", type=int, default=15)
     a = ap.parse_args()
 
     from unsloth import FastVisionModel                      # import before transformers/trl
@@ -49,10 +51,24 @@ def main():
 
     prompts = {c: vlm.chart_prompt(c) for c in vlm.CHARTS}
     rows = [json.loads(l) for l in open(os.path.join(a.data, "train.jsonl"), encoding="utf-8")]
-    data = [{"messages": [
-        {"role": "user", "content": [{"type": "image", "image": load(os.path.join(a.data, f), a.max_side)} for f in r["frames"]]
-                                    + [{"type": "text", "text": prompts[r["chart"]]}]},
-        {"role": "assistant", "content": [{"type": "text", "text": r["answer"]}]}]} for r in rows]
+
+    def example(r):
+        return {"messages": [
+            {"role": "user", "content": [{"type": "image", "image": load(os.path.join(a.data, f), a.max_side)} for f in r["frames"]]
+                                        + [{"type": "text", "text": prompts[r["chart"]]}]},
+            {"role": "assistant", "content": [{"type": "text", "text": r["answer"]}]}]}
+
+    class Lazy(list):
+        """The clips, with frames read from disk only when the trainer asks for that example (keeps RAM low)."""
+        def __getitem__(self, i):
+            if isinstance(i, slice):
+                return [example(r) for r in list.__getitem__(self, i)]
+            return example(list.__getitem__(self, i))
+
+        def __iter__(self):
+            return (example(r) for r in list.__iter__(self))
+
+    data = Lazy(rows)
     steps = a.steps or max(1, int(round(len(data) * a.epochs / 8)))
     print(f"{len(data)} training clips x {len(rows[0]['frames'])} frames, {steps} steps, base {a.base}")
 
@@ -70,10 +86,16 @@ def main():
             per_device_train_batch_size=1, gradient_accumulation_steps=8,
             warmup_steps=10, max_steps=steps, learning_rate=a.lr,
             logging_steps=5, optim="adamw_8bit", weight_decay=0.001, lr_scheduler_type="linear",
-            seed=3407, output_dir=os.path.join(ROOT, "outputs_video"), report_to="none",
+            seed=3407, output_dir=a.save_dir or os.path.join(ROOT, "outputs_video"), report_to="none",
+            save_strategy="steps" if a.save_dir else "no", save_steps=a.save_steps, save_total_limit=1,
             remove_unused_columns=False, dataset_text_field="", dataset_kwargs={"skip_prepare_dataset": True},
             max_length=a.max_length))
-    stats = trainer.train()
+    last = None
+    if a.save_dir and os.path.isdir(a.save_dir):
+        ck = sorted((d for d in os.listdir(a.save_dir) if d.startswith("checkpoint-")), key=lambda d: int(d.split("-")[1]))
+        last = os.path.join(a.save_dir, ck[-1]) if ck else None
+    print(f"resuming from {last}" if last else "starting training from step 0")
+    stats = trainer.train(resume_from_checkpoint=last)
     model.save_pretrained(a.out)
     tokenizer.save_pretrained(a.out)
     json.dump({"base": a.base, "clips": len(data), "frames_per_clip": len(rows[0]["frames"]), "steps": steps, "rank": a.rank,

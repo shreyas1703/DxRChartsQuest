@@ -20,7 +20,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
-CHARTS = ["heatmap", "scatter", "linexy", "line", "pie", "bar"]          # longest first, so "bar" never matches inside another name
+CHARTS = ["heatmap", "scatter", "pieany", "linexy", "bar3d", "line", "pie", "bar"]          # longest first, so "bar" never matches inside another name
 
 
 def duration(video):
@@ -48,7 +48,7 @@ def main():
         stem = os.path.splitext(os.path.basename(v))[0]
         chart = next((c for c in CHARTS if stem.lower().startswith(c)), None)
         if not chart:
-            print(f"skipped {stem}: name must start with pie / bar / line / linexy / heatmap / scatter")
+            print(f"skipped {stem}: name must start with pie / pieany / bar / bar3d / line / linexy / heatmap / scatter")
             continue
         if a.charts and chart not in a.charts:
             continue

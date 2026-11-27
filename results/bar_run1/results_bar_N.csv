@@ -1,0 +1,6 @@
+time,set,model,input,chart,clip,frames,seconds,measure,structure,value_acc,value_mre,flags,prediction
+20261127-0408,real,qwen35_base,video,bar3d,bar3d_control_N,8,7.2,Value,1.0,0.5,0.1513,,predictions/video_qwen35_base/real_video_bar3d_control_N.csv
+20261127-0410,real,qwen35_bar_r1,video,bar3d,bar3d_control_N,8,120.7,Value,1.0,0.75,0.0675,,predictions/median_qwen35_bar_r1/real_video_bar3d_control_N.csv
+20261127-0410,real,qwen35_bar_r1,median,bar3d,bar3d_control_N,8,120.7,Value,1.0,0.75,0.0653,,predictions/median_qwen35_bar_r1/real_median_bar3d_control_N.csv
+20261127-0410,real,qwen35_bar_r1,median_cal,bar3d,bar3d_control_N,8,120.7,Value,1.0,0.75,0.0653,,predictions/median_qwen35_bar_r1/real_median_cal_bar3d_control_N.csv
+20261127-0410,real,qwen35_bar_r1,video_cal,bar3d,bar3d_control_N,8,120.7,Value,1.0,0.75,0.0705,,predictions/median_qwen35_bar_r1/real_video_cal_bar3d_control_N.csv
